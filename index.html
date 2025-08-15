@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Duck Battle</title>
+    <title>Quack Quest</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
@@ -38,67 +38,82 @@
 </head>
 <body class="bg-gray-800 text-white flex items-center justify-center min-h-screen p-4">
 
-    <div id="game-container" class="w-full max-w-4xl mx-auto bg-gray-900 border-4 border-gray-700 rounded-lg shadow-lg p-4">
-        
-        <!-- Battle Screen -->
-        <div id="battle-scene" class="grid grid-cols-1 gap-4">
-            <!-- Opponent Area -->
-            <div class="text-right">
-                <div class="inline-block bg-gray-700 p-2 rounded-lg border-2 border-gray-600 w-full max-w-sm ml-auto">
-                    <div class="flex justify-between items-center">
-                        <div class="text-lg" id="opponent-name">Stray Kitty</div>
-                        <div class="text-sm">HP: <span id="opponent-hp-text">45/45</span></div>
-                    </div>
-                    <div class="w-full bg-gray-600 rounded-full h-4 mt-1 border border-black">
-                        <div id="opponent-hp-bar" class="bg-green-500 h-full rounded-full health-bar-inner" style="width: 100%"></div>
-                    </div>
-                </div>
-                <div class="flex justify-end mt-2">
-                    <div id="opponent-sprite" class="duck-sprite"></div>
-                </div>
-            </div>
-
-            <!-- Player Area -->
-            <div>
-                 <div class="flex justify-start mb-2">
-                    <div id="player-sprite" class="duck-sprite"></div>
-                </div>
-                <div class="inline-block bg-gray-700 p-2 rounded-lg border-2 border-gray-600 w-full max-w-sm mr-auto">
-                    <div class="flex justify-between items-center">
-                        <div class="text-lg" id="player-name">Decent Duck</div>
-                        <div class="text-sm">HP: <span id="player-hp-text">55/55</span></div>
-                    </div>
-                    <div class="w-full bg-gray-600 rounded-full h-4 mt-1 border border-black">
-                        <div id="player-hp-bar" class="bg-green-500 h-full rounded-full health-bar-inner" style="width: 100%"></div>
-                    </div>
-                </div>
+    <div id="main-container" class="w-full max-w-4xl mx-auto">
+        <!-- Main Menu -->
+        <div id="main-menu" class="text-center">
+            <h1 class="text-6xl mb-8">Quack Quest</h1>
+            <div class="space-y-4 max-w-xs mx-auto">
+                <button class="w-full bg-purple-600 text-white font-bold py-3 px-4 rounded-lg text-2xl border-b-4 border-purple-800 opacity-50 cursor-not-allowed">Story</button>
+                <button onclick="startGame()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg text-2xl border-b-4 border-green-800">Battle</button>
+                <button class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg text-2xl border-b-4 border-blue-800 opacity-50 cursor-not-allowed">Options</button>
+                <button class="w-full bg-gray-600 text-white font-bold py-3 px-4 rounded-lg text-2xl border-b-4 border-gray-800 opacity-50 cursor-not-allowed">Credits</button>
             </div>
         </div>
 
-        <!-- Message and Controls -->
-        <div id="ui-panel" class="mt-4 border-4 border-gray-700 rounded-lg p-4 h-32 flex">
-            <!-- Message Log -->
-            <div id="message-log" class="w-1/2 text-lg flex items-center justify-center text-center">
-                What will Decent Duck do?
+        <!-- Game Container -->
+        <div id="game-container" class="hidden w-full bg-gray-900 border-4 border-gray-700 rounded-lg shadow-lg p-4">
+            
+            <!-- Battle Screen -->
+            <div id="battle-scene" class="grid grid-cols-1 gap-4">
+                <!-- Opponent Area -->
+                <div class="text-right">
+                    <div class="inline-block bg-gray-700 p-2 rounded-lg border-2 border-gray-600 w-full max-w-sm ml-auto">
+                        <div class="flex justify-between items-center">
+                            <div class="text-lg" id="opponent-name"></div>
+                            <div class="text-sm">HP: <span id="opponent-hp-text"></span></div>
+                        </div>
+                        <div class="w-full bg-gray-600 rounded-full h-4 mt-1 border border-black">
+                            <div id="opponent-hp-bar" class="bg-green-500 h-full rounded-full health-bar-inner" style="width: 100%"></div>
+                        </div>
+                    </div>
+                    <div class="flex justify-end mt-2">
+                        <div id="opponent-sprite" class="duck-sprite"></div>
+                    </div>
+                </div>
+
+                <!-- Player Area -->
+                <div>
+                     <div class="flex justify-start mb-2">
+                        <div id="player-sprite" class="duck-sprite"></div>
+                    </div>
+                    <div class="inline-block bg-gray-700 p-2 rounded-lg border-2 border-gray-600 w-full max-w-sm mr-auto">
+                        <div class="flex justify-between items-center">
+                            <div class="text-lg" id="player-name">Decent Duck</div>
+                            <div class="text-sm">HP: <span id="player-hp-text">55/55</span></div>
+                        </div>
+                        <div class="w-full bg-gray-600 rounded-full h-4 mt-1 border border-black">
+                            <div id="player-hp-bar" class="bg-green-500 h-full rounded-full health-bar-inner" style="width: 100%"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <!-- Action Buttons -->
-            <div id="action-buttons" class="w-1/2 grid grid-cols-2 gap-4">
-                <button onclick="showMoveSelection()" class="bg-red-600 hover:bg-red-700 p-4 rounded-lg border-2 border-red-800 text-center">Fight</button>
-                <button onclick="showSwitchSelection()" class="bg-blue-600 hover:bg-blue-700 p-4 rounded-lg border-2 border-blue-800 text-center">Switch</button>
+            <!-- Message and Controls -->
+            <div id="ui-panel" class="mt-4 border-4 border-gray-700 rounded-lg p-4 h-32 flex">
+                <!-- Message Log -->
+                <div id="message-log" class="w-1/2 text-lg flex items-center justify-center text-center">
+                    What will Decent Duck do?
+                </div>
+
+                <!-- Action Buttons -->
+                <div id="action-buttons" class="w-1/2 grid grid-cols-2 gap-2">
+                    <button onclick="showMoveSelection()" class="bg-red-600 hover:bg-red-700 p-2 rounded-lg border-2 border-red-800 text-center row-span-2 h-full flex items-center justify-center">Fight</button>
+                    <button onclick="showSwitchSelection()" class="bg-blue-600 hover:bg-blue-700 p-2 rounded-lg border-2 border-blue-800 text-center">Switch</button>
+                    <button onclick="fleeBattle()" class="bg-yellow-500 hover:bg-yellow-600 p-2 rounded-lg border-2 border-yellow-700 text-center">Flee</button>
+                </div>
+
+                <!-- Move Selection -->
+                <div id="move-selection" class="hidden w-1/2 grid grid-cols-2 gap-4">
+                    <!-- Move buttons will be generated here by JS -->
+                </div>
+
+                <!-- Switch Selection -->
+                <div id="switch-selection" class="hidden w-1/2 grid grid-cols-2 gap-4">
+                     <!-- Switch buttons will be generated here by JS -->
+                </div>
             </div>
 
-            <!-- Move Selection -->
-            <div id="move-selection" class="hidden w-1/2 grid grid-cols-2 gap-4">
-                <!-- Move buttons will be generated here by JS -->
-            </div>
-
-            <!-- Switch Selection -->
-            <div id="switch-selection" class="hidden w-1/2 grid grid-cols-2 gap-4">
-                 <!-- Switch buttons will be generated here by JS -->
-            </div>
         </div>
-
     </div>
     
     <!-- Game Over Modal -->
@@ -187,24 +202,76 @@
         // 2. Create Players and their Teams
         const player = new Player("You", [
             new Duck("Decent Duck", "Grass", 55, 10, 14, 8, [peck, pondweedSlap, sharpReed], 'bg-green-500 border-green-700', 'https://i.imgur.com/K7CdYVS.png'),
-            new Duck("Puddle Paddler", "Water", 50, 12, 12, 10, [peck, pondSpit, featherJet], 'bg-blue-500 border-blue-700')
+            new Duck("Duck Hunter", "Normal", 50, 16, 9, 11, [peck, webbedScratch], 'bg-gray-500 border-gray-700', 'https://i.imgur.com/GjlouiP.png'),
+            new Duck("Lucky Duck", "Normal", 50, 13, 13, 13, [peck, webbedScratch], 'bg-yellow-400 border-yellow-600', 'https://i.imgur.com/stim48O.png')
         ]);
-        const opponent = new Player("Rival Drake", [
+
+        // --- ENEMY ROSTER ---
+        const enemyRoster = [
+            new Duck("Balien 1", "Grass", 50, 12, 12, 10, [peck, pondweedSlap], 'bg-green-500', 'https://i.imgur.com/b97mdLb.png'),
+            new Duck("Balien 2", "Grass", 52, 13, 11, 11, [peck, sharpReed], 'bg-green-500', 'https://i.imgur.com/uaLJjkD.png'),
+            new Duck("Mean Duck 1", "Normal", 60, 15, 10, 9, [peck, webbedScratch], 'bg-gray-500', 'https://i.imgur.com/0OsGr9t.png'),
+            new Duck("Mean Duck 2", "Normal", 62, 16, 9, 10, [peck, webbedScratch], 'bg-gray-500', 'https://i.imgur.com/8ofI4xK.png'),
+            new Duck("Lucky Kitty", "Fire", 45, 14, 10, 12, [webbedScratch, spicyCrumb], 'bg-red-500', 'https://i.imgur.com/W9m87ny.png'),
+            new Duck("Lost Sea Turtle", "Water", 70, 10, 18, 5, [pondSpit], 'bg-blue-500', 'https://i.imgur.com/qF0ZzJQ.png'),
+            new Duck("Hippie Sea Turtle", "Water", 68, 11, 17, 6, [pondSpit, featherJet], 'bg-blue-500', 'https://i.imgur.com/G535FnW.png'),
+            new Duck("Chad Turtle", "Normal", 80, 18, 18, 7, [peck], 'bg-yellow-500', 'https://i.imgur.com/n1FoFdm.png'),
+            new Duck("King Chef Kitty", "Fire", 55, 15, 12, 13, [spicyCrumb, quackInferno], 'bg-red-500', 'https://i.imgur.com/vNbpCWe.png'),
+            new Duck("Feral Kitty", "Normal", 50, 17, 8, 15, [webbedScratch], 'bg-gray-500', 'https://i.imgur.com/aLT1Oro.png'),
             new Duck("Stray Kitty", "Fire", 45, 14, 10, 12, [webbedScratch, spicyCrumb, quackInferno], 'bg-red-500 border-red-700', 'https://i.imgur.com/D54Prdv.png'),
             new Duck("Bread Fiend", "Normal", 65, 15, 15, 7, [peck, webbedScratch], 'bg-yellow-500 border-yellow-700')
-        ]);
+        ];
+
+        let opponent; // Will be defined when the game starts
 
         // --- UI AND BATTLE LOGIC ---
 
         let isBattleInProgress = false;
 
         // DOM Elements
+        const mainMenu = document.getElementById('main-menu');
+        const gameContainer = document.getElementById('game-container');
         const messageLog = document.getElementById('message-log');
         const actionButtons = document.getElementById('action-buttons');
         const moveSelection = document.getElementById('move-selection');
         const switchSelection = document.getElementById('switch-selection');
 
         const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+        function startGame() {
+            // Reset player team health
+            player.team.forEach(duck => {
+                duck.currentHp = duck.maxHp;
+                duck.isFainted = false;
+            });
+            player.activeDuck = player.team[0];
+
+            // --- RANDOMIZE ENEMY TEAM ---
+            function shuffleArray(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+            }
+
+            shuffleArray(enemyRoster);
+            const opponentTeam = enemyRoster.slice(0, 2).map(duckData => new Duck(duckData.name, duckData.type, duckData.maxHp, duckData.attack, duckData.defense, duckData.speed, duckData.moves, duckData.color, duckData.imageUrl));
+            opponent = new Player("Rival Drake", opponentTeam);
+
+            // Switch to game view
+            mainMenu.style.display = 'none';
+            gameContainer.style.display = 'block';
+
+            // Initialize game UI
+            updateUI();
+            displayMessage("A wild battle begins!", 2000);
+        }
+
+        function fleeBattle() {
+            gameContainer.style.display = 'none';
+            mainMenu.style.display = 'block';
+            isBattleInProgress = false; // Reset battle lock
+        }
 
         function updateUI() {
             // Player UI
@@ -375,9 +442,11 @@
                     } else {
                         await displayMessage(`${defender.name} is choosing a new duck...`);
                         const nextDuckIndex = defender.team.findIndex(d => !d.isFainted);
-                        defender.switchDuck(nextDuckIndex);
-                        updateUI();
-                        await displayMessage(`${defender.name} sent out ${defender.activeDuck.name}!`);
+                        if (nextDuckIndex !== -1) {
+                            opponent.switchDuck(nextDuckIndex);
+                            updateUI();
+                            await displayMessage(`${opponent.name} sent out ${opponent.activeDuck.name}!`);
+                        }
                     }
                 }
              }
@@ -402,10 +471,6 @@
             modal.style.display = 'flex';
         }
 
-        window.onload = () => {
-            updateUI();
-            displayMessage("A wild duck battle begins!", 2000);
-        };
     </script>
 </body>
 </html>
