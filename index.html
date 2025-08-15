@@ -1,282 +1,411 @@
-import random
-import time
-import os
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Duck Battle</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Press Start 2P', cursive;
+            background-color: #f0f0f0;
+        }
+        .health-bar-inner {
+            transition: width 0.5s ease-in-out;
+        }
+        .duck-sprite {
+            width: 120px;
+            height: 120px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            image-rendering: pixelated; /* Helps keep pixel art crisp */
+        }
+        .attack-animation {
+            animation: shake 0.5s;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+        .type-fire { background-color: #F08030; color: white; }
+        .type-water { background-color: #6890F0; color: white; }
+        .type-grass { background-color: #78C850; color: white; }
+        .type-normal { background-color: #A8A878; color: white; }
+    </style>
+</head>
+<body class="bg-gray-800 text-white flex items-center justify-center min-h-screen p-4">
 
-# A dictionary to define the type effectiveness.
-# Key: Attacking type
-# Value: Dictionary of defending types and their multipliers.
-TYPE_CHART = {
-    'Fire': {'Fire': 0.5, 'Water': 0.5, 'Grass': 2.0, 'Normal': 1.0},
-    'Water': {'Fire': 2.0, 'Water': 0.5, 'Grass': 0.5, 'Normal': 1.0},
-    'Grass': {'Fire': 0.5, 'Water': 2.0, 'Grass': 0.5, 'Normal': 1.0},
-    'Normal': {'Fire': 1.0, 'Water': 1.0, 'Grass': 1.0, 'Normal': 1.0},
-}
+    <div id="game-container" class="w-full max-w-4xl mx-auto bg-gray-900 border-4 border-gray-700 rounded-lg shadow-lg p-4">
+        
+        <!-- Battle Screen -->
+        <div id="battle-scene" class="grid grid-cols-1 gap-4">
+            <!-- Opponent Area -->
+            <div class="text-right">
+                <div class="inline-block bg-gray-700 p-2 rounded-lg border-2 border-gray-600 w-full max-w-sm ml-auto">
+                    <div class="flex justify-between items-center">
+                        <div class="text-lg" id="opponent-name">Stray Kitty</div>
+                        <div class="text-sm">HP: <span id="opponent-hp-text">45/45</span></div>
+                    </div>
+                    <div class="w-full bg-gray-600 rounded-full h-4 mt-1 border border-black">
+                        <div id="opponent-hp-bar" class="bg-green-500 h-full rounded-full health-bar-inner" style="width: 100%"></div>
+                    </div>
+                </div>
+                <div class="flex justify-end mt-2">
+                    <div id="opponent-sprite" class="duck-sprite"></div>
+                </div>
+            </div>
 
-# --- Class Definitions ---
+            <!-- Player Area -->
+            <div>
+                 <div class="flex justify-start mb-2">
+                    <div id="player-sprite" class="duck-sprite"></div>
+                </div>
+                <div class="inline-block bg-gray-700 p-2 rounded-lg border-2 border-gray-600 w-full max-w-sm mr-auto">
+                    <div class="flex justify-between items-center">
+                        <div class="text-lg" id="player-name">Decent Duck</div>
+                        <div class="text-sm">HP: <span id="player-hp-text">55/55</span></div>
+                    </div>
+                    <div class="w-full bg-gray-600 rounded-full h-4 mt-1 border border-black">
+                        <div id="player-hp-bar" class="bg-green-500 h-full rounded-full health-bar-inner" style="width: 100%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-class Move:
-    """Represents a single move that a Critter can use."""
-    def __init__(self, name, move_type, power):
-        self.name = name
-        self.type = move_type
-        self.power = power
+        <!-- Message and Controls -->
+        <div id="ui-panel" class="mt-4 border-4 border-gray-700 rounded-lg p-4 h-32 flex">
+            <!-- Message Log -->
+            <div id="message-log" class="w-1/2 text-lg flex items-center justify-center text-center">
+                What will Decent Duck do?
+            </div>
 
-class Critter:
-    """Represents a single creature with stats, moves, and a type."""
-    def __init__(self, name, critter_type, max_hp, attack, defense, speed, moves):
-        self.name = name
-        self.type = critter_type
-        self.max_hp = max_hp
-        self.current_hp = max_hp
-        self.attack = attack
-        self.defense = defense
-        self.speed = speed
-        self.moves = moves
-        self.is_fainted = False
+            <!-- Action Buttons -->
+            <div id="action-buttons" class="w-1/2 grid grid-cols-2 gap-4">
+                <button onclick="showMoveSelection()" class="bg-red-600 hover:bg-red-700 p-4 rounded-lg border-2 border-red-800 text-center">Fight</button>
+                <button onclick="showSwitchSelection()" class="bg-blue-600 hover:bg-blue-700 p-4 rounded-lg border-2 border-blue-800 text-center">Switch</button>
+            </div>
 
-    def take_damage(self, damage):
-        """Applies damage to the critter and checks if it has fainted."""
-        self.current_hp -= damage
-        if self.current_hp <= 0:
-            self.current_hp = 0
-            self.is_fainted = True
-            print(f"{self.name} has fainted!")
+            <!-- Move Selection -->
+            <div id="move-selection" class="hidden w-1/2 grid grid-cols-2 gap-4">
+                <!-- Move buttons will be generated here by JS -->
+            </div>
 
-    def get_hp_bar(self):
-        """Returns a string representing the HP bar."""
-        bar_length = 20
-        filled_length = int(bar_length * self.current_hp / self.max_hp)
-        bar = '█' * filled_length + '-' * (bar_length - filled_length)
-        return f"HP: {self.current_hp}/{self.max_hp} [{bar}]"
+            <!-- Switch Selection -->
+            <div id="switch-selection" class="hidden w-1/2 grid grid-cols-2 gap-4">
+                 <!-- Switch buttons will be generated here by JS -->
+            </div>
+        </div>
 
-class Player:
-    """Represents a player (or AI) with a team of critters."""
-    def __init__(self, name, team):
-        self.name = name
-        self.team = team
-        self.active_critter = team[0]
-
-    def switch_critter(self, index):
-        """Switches the active critter to another one on the team."""
-        if 0 <= index < len(self.team) and not self.team[index].is_fainted:
-            self.active_critter = self.team[index]
-            print(f"{self.name} sent out {self.active_critter.name}!")
-            return True
-        return False
-
-    def has_lost(self):
-        """Checks if all critters on the team have fainted."""
-        return all(critter.is_fainted for critter in self.team)
-
-# --- Helper Functions ---
-
-def clear_screen():
-    """Clears the console screen."""
-    os.system('cls' if os.name == 'nt' else 'clear')
-
-def wait(seconds=1.5):
-    """Pauses the execution for a given number of seconds."""
-    time.sleep(seconds)
-
-# --- Battle Logic ---
-
-def calculate_damage(attacker_critter, defender_critter, move):
-    """Calculates the damage of an attack based on stats and types."""
-    print(f"{attacker_critter.name} used {move.name}!")
-    wait()
-
-    # Get the type effectiveness multiplier
-    type_multiplier = TYPE_CHART.get(move.type, {}).get(defender_critter.type, 1.0)
-
-    if type_multiplier > 1.0:
-        print("It's super effective!")
-    elif type_multiplier < 1.0:
-        print("It's not very effective...")
-    wait()
+    </div>
     
-    # Simple damage formula
-    damage = (
-        (attacker_critter.attack * move.power / defender_critter.defense) / 5
-    )
-    # Add some randomness
-    damage *= random.uniform(0.9, 1.1)
-    damage = int(damage * type_multiplier)
+    <!-- Game Over Modal -->
+    <div id="game-over-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center">
+        <div class="bg-gray-800 p-8 rounded-lg text-center border-4 border-gray-600">
+            <h2 id="game-over-message" class="text-3xl mb-4"></h2>
+            <button onclick="location.reload()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg text-xl">Play Again</button>
+        </div>
+    </div>
 
-    return max(1, damage) # Ensure at least 1 damage is dealt
 
-def display_battle_status(player1, player2):
-    """Displays the current state of the battle."""
-    clear_screen()
-    print("="*40)
-    print(f"OPPONENT: {player2.active_critter.name}")
-    print(player2.active_critter.get_hp_bar())
-    print("\n" * 2)
-    print(f"PLAYER: {player1.active_critter.name}")
-    print(player1.active_critter.get_hp_bar())
-    print("="*40)
+    <script>
+        // --- GAME DATA AND CLASSES ---
 
-def get_player_choice(player):
-    """Gets the player's action choice (fight or switch)."""
-    while True:
-        print("What will you do?")
-        print("1. Fight")
-        print("2. Switch Critter")
-        choice = input("> ")
-        if choice in ["1", "2"]:
-            return choice
-        print("Invalid choice. Please enter 1 or 2.")
+        const TYPE_CHART = {
+            'Fire': {'Fire': 0.5, 'Water': 0.5, 'Grass': 2.0, 'Normal': 1.0},
+            'Water': {'Fire': 2.0, 'Water': 0.5, 'Grass': 0.5, 'Normal': 1.0},
+            'Grass': {'Fire': 0.5, 'Water': 2.0, 'Grass': 0.5, 'Normal': 1.0},
+            'Normal': {'Fire': 1.0, 'Water': 1.0, 'Grass': 1.0, 'Normal': 1.0},
+        };
 
-def get_move_choice(player):
-    """Gets the player's move choice."""
-    while True:
-        print("Choose a move:")
-        for i, move in enumerate(player.active_critter.moves):
-            print(f"{i + 1}. {move.name} ({move.type})")
+        class Move {
+            constructor(name, type, power) {
+                this.name = name;
+                this.type = type;
+                this.power = power;
+            }
+        }
+
+        class Duck {
+            constructor(name, type, maxHp, attack, defense, speed, moves, color, imageUrl = null) {
+                this.name = name;
+                this.type = type;
+                this.maxHp = maxHp;
+                this.currentHp = maxHp;
+                this.attack = attack;
+                this.defense = defense;
+                this.speed = speed;
+                this.moves = moves;
+                this.isFainted = false;
+                this.color = color; // For sprite color fallback
+                this.imageUrl = imageUrl; // For sprite image
+            }
+
+            takeDamage(damage) {
+                this.currentHp -= damage;
+                if (this.currentHp <= 0) {
+                    this.currentHp = 0;
+                    this.isFainted = true;
+                }
+            }
+        }
+
+        class Player {
+            constructor(name, team) {
+                this.name = name;
+                this.team = team;
+                this.activeDuck = team[0];
+            }
+
+            switchDuck(index) {
+                if (index >= 0 && index < this.team.length && !this.team[index].isFainted) {
+                    this.activeDuck = this.team[index];
+                    return true;
+                }
+                return false;
+            }
+
+            hasLost() {
+                return this.team.every(duck => duck.isFainted);
+            }
+        }
+
+        // --- GAME SETUP ---
         
-        try:
-            choice = int(input("> "))
-            if 1 <= choice <= len(player.active_critter.moves):
-                return player.active_critter.moves[choice - 1]
-            else:
-                print("Invalid move number.")
-        except ValueError:
-            print("Please enter a number.")
+        // 1. Create Moves
+        const peck = new Move("Peck", "Normal", 10);
+        const webbedScratch = new Move("Webbed Scratch", "Normal", 9);
+        const spicyCrumb = new Move("Spicy Crumb", "Fire", 12);
+        const quackInferno = new Move("Quack Inferno", "Fire", 15);
+        const pondSpit = new Move("Pond Spit", "Water", 12);
+        const featherJet = new Move("Feather Jet", "Water", 14);
+        const pondweedSlap = new Move("Pondweed Slap", "Grass", 12);
+        const sharpReed = new Move("Sharp Reed", "Grass", 15);
 
-def get_switch_choice(player):
-    """Gets the player's choice for switching critters."""
-    while True:
-        print("Choose a critter to switch to:")
-        for i, critter in enumerate(player.team):
-            status = "FAINTED" if critter.is_fainted else f"HP: {critter.current_hp}/{critter.max_hp}"
-            if critter is player.active_critter:
-                print(f"{i + 1}. {critter.name} ({critter.type}) - ACTIVE")
-            else:
-                print(f"{i + 1}. {critter.name} ({critter.type}) - {status}")
+        // 2. Create Players and their Teams
+        const player = new Player("You", [
+            new Duck("Decent Duck", "Grass", 55, 10, 14, 8, [peck, pondweedSlap, sharpReed], 'bg-green-500 border-green-700', 'https://i.imgur.com/K7CdYVS.png'),
+            new Duck("Puddle Paddler", "Water", 50, 12, 12, 10, [peck, pondSpit, featherJet], 'bg-blue-500 border-blue-700')
+        ]);
+        const opponent = new Player("Rival Drake", [
+            new Duck("Stray Kitty", "Fire", 45, 14, 10, 12, [webbedScratch, spicyCrumb, quackInferno], 'bg-red-500 border-red-700', 'https://i.imgur.com/D54Prdv.png'),
+            new Duck("Bread Fiend", "Normal", 65, 15, 15, 7, [peck, webbedScratch], 'bg-yellow-500 border-yellow-700')
+        ]);
+
+        // --- UI AND BATTLE LOGIC ---
+
+        let isBattleInProgress = false;
+
+        // DOM Elements
+        const messageLog = document.getElementById('message-log');
+        const actionButtons = document.getElementById('action-buttons');
+        const moveSelection = document.getElementById('move-selection');
+        const switchSelection = document.getElementById('switch-selection');
+
+        const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+        function updateUI() {
+            // Player UI
+            document.getElementById('player-name').textContent = player.activeDuck.name;
+            const playerHpPercentage = (player.activeDuck.currentHp / player.activeDuck.maxHp) * 100;
+            const playerHpBar = document.getElementById('player-hp-bar');
+            playerHpBar.style.width = `${playerHpPercentage}%`;
+            playerHpBar.className = `h-full rounded-full health-bar-inner ${getHpBarColor(playerHpPercentage)}`;
+            document.getElementById('player-hp-text').textContent = `${player.activeDuck.currentHp}/${player.activeDuck.maxHp}`;
+            const playerSprite = document.getElementById('player-sprite');
+            if (player.activeDuck.imageUrl) {
+                playerSprite.style.backgroundImage = `url('${player.activeDuck.imageUrl}')`;
+                playerSprite.className = 'duck-sprite'; // Remove color classes
+            } else {
+                playerSprite.style.backgroundImage = 'none';
+                playerSprite.className = `duck-sprite ${player.activeDuck.color}`;
+            }
+
+            // Opponent UI
+            document.getElementById('opponent-name').textContent = opponent.activeDuck.name;
+            const opponentHpPercentage = (opponent.activeDuck.currentHp / opponent.activeDuck.maxHp) * 100;
+            const opponentHpBar = document.getElementById('opponent-hp-bar');
+            opponentHpBar.style.width = `${opponentHpPercentage}%`;
+            opponentHpBar.className = `h-full rounded-full health-bar-inner ${getHpBarColor(opponentHpPercentage)}`;
+            document.getElementById('opponent-hp-text').textContent = `${opponent.activeDuck.currentHp}/${opponent.activeDuck.maxHp}`;
+            const opponentSprite = document.getElementById('opponent-sprite');
+             if (opponent.activeDuck.imageUrl) {
+                opponentSprite.style.backgroundImage = `url('${opponent.activeDuck.imageUrl}')`;
+                opponentSprite.className = 'duck-sprite'; // Remove color classes
+            } else {
+                opponentSprite.style.backgroundImage = 'none';
+                opponentSprite.className = `duck-sprite ${opponent.activeDuck.color}`;
+            }
+        }
         
-        try:
-            choice = int(input("> "))
-            if not (1 <= choice <= len(player.team)):
-                print("Invalid number.")
-            elif player.team[choice - 1].is_fainted:
-                print(f"{player.team[choice - 1].name} is fainted and cannot fight!")
-            elif player.team[choice - 1] is player.active_critter:
-                print(f"{player.team[choice - 1].name} is already in battle!")
-            else:
-                return choice - 1
-        except ValueError:
-            print("Please enter a number.")
+        function getHpBarColor(percentage) {
+            if (percentage > 50) return 'bg-green-500';
+            if (percentage > 20) return 'bg-yellow-500';
+            return 'bg-red-500';
+        }
 
+        async function displayMessage(message, duration = 1500) {
+            messageLog.textContent = message;
+            await wait(duration);
+        }
 
-# --- Main Game Loop ---
+        function showActionButtons() {
+            messageLog.textContent = `What will ${player.activeDuck.name} do?`;
+            actionButtons.style.display = 'grid';
+            moveSelection.style.display = 'none';
+            switchSelection.style.display = 'none';
+        }
 
-def battle(player1, player2):
-    """The main function to run a battle between two players."""
-    print(f"{player1.name} challenges {player2.name} to a battle!")
-    wait()
-
-    while not player1.has_lost() and not player2.has_lost():
-        # Determine turn order based on speed
-        p1_turn = player1.active_critter.speed >= player2.active_critter.speed
+        function showMoveSelection() {
+            actionButtons.style.display = 'none';
+            moveSelection.style.display = 'grid';
+            moveSelection.innerHTML = '';
+            player.activeDuck.moves.forEach(move => {
+                const moveBtn = document.createElement('button');
+                const typeClass = `type-${move.type.toLowerCase()}`;
+                moveBtn.className = `p-2 rounded-lg border-2 text-center text-sm ${typeClass}`;
+                moveBtn.textContent = move.name;
+                moveBtn.onclick = () => playerAction({ action: 'move', move });
+                moveSelection.appendChild(moveBtn);
+            });
+             const backBtn = document.createElement('button');
+             backBtn.className = 'bg-gray-500 hover:bg-gray-600 p-2 rounded-lg border-2 border-gray-700 text-center text-sm col-span-2';
+             backBtn.textContent = 'Back';
+             backBtn.onclick = showActionButtons;
+             moveSelection.appendChild(backBtn);
+        }
         
-        turn_order = [player1, player2] if p1_turn else [player2, player1]
-        
-        # Store choices before executing actions
-        choices = {}
+        function showSwitchSelection(forceSwitch = false) {
+            actionButtons.style.display = 'none';
+            switchSelection.style.display = 'grid';
+            switchSelection.innerHTML = '';
+            player.team.forEach((duck, index) => {
+                const switchBtn = document.createElement('button');
+                const typeClass = `type-${duck.type.toLowerCase()}`;
+                switchBtn.className = `p-2 rounded-lg border-2 text-center text-sm ${typeClass}`;
+                switchBtn.textContent = `${duck.name} (${duck.currentHp}/${duck.maxHp})`;
+                
+                if (duck.isFainted || duck === player.activeDuck) {
+                    switchBtn.disabled = true;
+                    switchBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                }
+                
+                switchBtn.onclick = () => {
+                    if (forceSwitch) {
+                        handleForcedSwitch(index);
+                    } else {
+                        playerAction({ action: 'switch', index });
+                    }
+                };
+                switchSelection.appendChild(switchBtn);
+            });
 
-        for current_player in turn_order:
-            display_battle_status(player1, player2)
+            if (!forceSwitch) {
+                const backBtn = document.createElement('button');
+                backBtn.className = 'bg-gray-500 hover:bg-gray-600 p-2 rounded-lg border-2 border-gray-700 text-center text-sm col-span-2';
+                backBtn.textContent = 'Back';
+                backBtn.onclick = showActionButtons;
+                switchSelection.appendChild(backBtn);
+            }
+        }
+
+        async function playerAction(choice) {
+            if (isBattleInProgress) return;
+            isBattleInProgress = true;
             
-            # --- AI Logic for Opponent ---
-            if current_player == player2:
-                print(f"\n{player2.name} is thinking...")
-                wait()
-                # Simple AI: always chooses the first move
-                choices[current_player] = {'action': 'move', 'move': current_player.active_critter.moves[0]}
-                continue
+            const aiChoice = { action: 'move', move: opponent.activeDuck.moves[0] };
 
-            # --- Human Player Logic ---
-            action_choice = get_player_choice(current_player)
+            const playerGoesFirst = player.activeDuck.speed >= opponent.activeDuck.speed;
+            const turnOrder = playerGoesFirst 
+                ? [{attacker: player, defender: opponent, choice: choice}, {attacker: opponent, defender: player, choice: aiChoice}]
+                : [{attacker: opponent, defender: player, choice: aiChoice}, {attacker: player, defender: opponent, choice: choice}];
 
-            if action_choice == "1": # Fight
-                move = get_move_choice(current_player)
-                choices[current_player] = {'action': 'move', 'move': move}
-            elif action_choice == "2": # Switch
-                switch_index = get_switch_choice(current_player)
-                choices[current_player] = {'action': 'switch', 'index': switch_index}
+            for (const turn of turnOrder) {
+                if (turn.attacker.activeDuck.isFainted || turn.defender.activeDuck.isFainted) {
+                    continue;
+                }
+                await executeTurn(turn.attacker, turn.defender, turn.choice);
+                if (player.hasLost() || opponent.hasLost()) {
+                    endBattle();
+                    return;
+                }
+            }
+            
+            showActionButtons();
+            isBattleInProgress = false;
+        }
         
-        # Execute actions based on speed order
-        for current_player in turn_order:
-            opponent = player2 if current_player == player1 else player1
-            
-            # Skip turn if active critter fainted from the first attacker's move
-            if current_player.active_critter.is_fainted:
-                continue
+        async function executeTurn(attacker, defender, choice) {
+             if (choice.action === 'switch') {
+                attacker.switchDuck(choice.index);
+                await displayMessage(`${attacker.name} sent out ${attacker.activeDuck.name}!`);
+                updateUI();
+             } else if (choice.action === 'move') {
+                const move = choice.move;
+                await displayMessage(`${attacker.activeDuck.name} used ${move.name}!`);
 
-            choice = choices[current_player]
+                const typeMultiplier = TYPE_CHART[move.type]?.[defender.activeDuck.type] ?? 1.0;
+                let message = '';
+                if (typeMultiplier > 1) message = "It's super effective!";
+                if (typeMultiplier < 1) message = "It's not very effective...";
+                if (message) await displayMessage(message, 1000);
 
-            if choice['action'] == 'switch':
-                current_player.switch_critter(choice['index'])
-                wait()
-            
-            elif choice['action'] == 'move':
-                damage = calculate_damage(current_player.active_critter, opponent.active_critter, choice['move'])
-                opponent.active_critter.take_damage(damage)
-                print(f"{opponent.active_critter.name} took {damage} damage!")
-                wait()
+                const baseDamage = ((attacker.activeDuck.attack * move.power) / defender.activeDuck.defense) / 5;
+                const randomFactor = Math.random() * (1.1 - 0.9) + 0.9;
+                const damage = Math.max(1, Math.floor(baseDamage * randomFactor * typeMultiplier));
+                
+                const defenderSprite = (defender === player) ? document.getElementById('player-sprite') : document.getElementById('opponent-sprite');
+                defenderSprite.classList.add('attack-animation');
+                
+                defender.activeDuck.takeDamage(damage);
+                updateUI();
+                await displayMessage(`${defender.activeDuck.name} took ${damage} damage!`);
+                
+                defenderSprite.classList.remove('attack-animation');
 
-                # Check if the opponent's critter fainted
-                if opponent.active_critter.is_fainted:
-                    display_battle_status(player1, player2)
-                    wait()
-                    if opponent.has_lost():
-                        break # End the battle immediately
-                    
-                    # Force opponent to switch
-                    if opponent == player1: # Human player must switch
-                        print(f"{opponent.name}, you must choose a new critter.")
-                        switch_index = get_switch_choice(opponent)
-                        opponent.switch_critter(switch_index)
-                    else: # AI switches to the next available critter
-                        for i in range(len(opponent.team)):
-                            if not opponent.team[i].is_fainted:
-                                opponent.switch_critter(i)
-                                break
-                    wait()
+                if(defender.activeDuck.isFainted) {
+                    await displayMessage(`${defender.activeDuck.name} has fainted!`);
+                    if (defender.hasLost()) return;
 
+                    if (defender === player) {
+                        await displayMessage("You must choose a new duck.");
+                        showSwitchSelection(true);
+                    } else {
+                        await displayMessage(`${defender.name} is choosing a new duck...`);
+                        const nextDuckIndex = defender.team.findIndex(d => !d.isFainted);
+                        defender.switchDuck(nextDuckIndex);
+                        updateUI();
+                        await displayMessage(`${defender.name} sent out ${defender.activeDuck.name}!`);
+                    }
+                }
+             }
+        }
+        
+        async function handleForcedSwitch(index) {
+            player.switchDuck(index);
+            updateUI();
+            await displayMessage(`Go, ${player.activeDuck.name}!`);
+            isBattleInProgress = false;
+            showActionButtons();
+        }
 
-    # --- End of Battle ---
-    clear_screen()
-    if player1.has_lost():
-        print(f"{player2.name} wins the battle!")
-    else:
-        print(f"Congratulations! {player1.name} wins the battle!")
+        function endBattle() {
+            const modal = document.getElementById('game-over-modal');
+            const message = document.getElementById('game-over-message');
+            if (player.hasLost()) {
+                message.textContent = "You Lost! Better luck next time.";
+            } else {
+                message.textContent = "You Won! You're the top duck!";
+            }
+            modal.style.display = 'flex';
+        }
 
-
-# --- Game Setup ---
-
-if __name__ == "__main__":
-    # 1. Create Moves
-    tackle = Move(name="Tackle", move_type="Normal", power=10)
-    scratch = Move(name="Scratch", move_type="Normal", power=9)
-    ember = Move(name="Ember", move_type="Fire", power=12)
-    flame_burst = Move(name="Flame Burst", move_type="Fire", power=15)
-    water_gun = Move(name="Water Gun", move_type="Water", power=12)
-    aqua_jet = Move(name="Aqua Jet", move_type="Water", power=14)
-    vine_whip = Move(name="Vine Whip", move_type="Grass", power=12)
-    razor_leaf = Move(name="Razor Leaf", move_type="Grass", power=15)
-
-    # 2. Create Critters
-    flambit = Critter(name="Flambit", critter_type="Fire", max_hp=45, attack=14, defense=10, speed=12, moves=[scratch, ember, flame_burst])
-    aquafin = Critter(name="Aquafin", critter_type="Water", max_hp=50, attack=12, defense=12, speed=10, moves=[tackle, water_gun, aqua_jet])
-    leafy = Critter(name="Leafy", critter_type="Grass", max_hp=55, attack=10, defense=14, speed=8, moves=[tackle, vine_whip, razor_leaf])
-    stonetail = Critter(name="Stonetail", critter_type="Normal", max_hp=65, attack=15, defense=15, speed=7, moves=[tackle, scratch])
-
-    # 3. Create Players and their Teams
-    player_team = [leafy, aquafin]
-    opponent_team = [flambit, stonetail]
-
-    player = Player(name="You", team=player_team)
-    opponent = Player(name="Rival Gary", team=opponent_team)
-    
-    # 4. Start the Battle
-    battle(player, opponent)
+        window.onload = () => {
+            updateUI();
+            displayMessage("A wild duck battle begins!", 2000);
+        };
+    </script>
+</body>
+</html>
